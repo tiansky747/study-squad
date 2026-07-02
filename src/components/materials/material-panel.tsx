@@ -40,35 +40,31 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
 
   useEffect(() => { loadMaterials(); }, []);
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = (file: File) => {
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "上传失败" }));
-        alert(err.error || "上传失败");
-        setUploading(false);
-        return;
-      }
-      const data = await res.json();
-      const fileContent = data.content || data.preview || "";
-      if (fileContent) {
-        onSelectMaterial(fileContent);
-        setPreview(fileContent.slice(0, 300));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string || "";
+      const name = file.name;
+      if (content) {
+        onSelectMaterial(content);
+        setPreview(content.slice(0, 300));
         setShowPreview(true);
         setCurrentTab("upload");
-        setLocalUploads(prev => [{ name: data.name, size: data.size, source: "upload", preview: fileContent }, ...prev]);
+        setLocalUploads(prev => [{ name, size: content.length, source: "upload", preview: content }, ...prev]);
       }
-      loadMaterials();
       const btn = document.querySelector("[data-upload-btn]");
-      if (btn) btn.textContent = "✓ 已上传";
-      setTimeout(() => { if (btn) btn.innerHTML = '<svg class=\"lucide lucide-upload\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" x2=\"12\" y1=\"3\" y2=\"15\"/></svg> 上传'; }, 2000);
-    } catch {
-      alert("上传失败");
-    }
-    setUploading(false);
+      if (btn) (btn as HTMLElement).innerText = "✓ 已上传";
+      setTimeout(() => {
+        if (btn) (btn as HTMLElement).innerHTML = '<svg class=\"lucide lucide-upload\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" x2=\"12\" y1=\"3\" y2=\"15\"/></svg> 上传';
+      }, 2000);
+      setUploading(false);
+    };
+    reader.onerror = () => {
+      alert("文件读取失败");
+      setUploading(false);
+    };
+    reader.readAsText(file);
   };
 
   const handleSelectMaterial = async (name: string, source: string) => {
