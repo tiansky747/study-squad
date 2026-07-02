@@ -90,3 +90,5 @@ export const characters: Character[] = [
 export function getCharacter(id: string): Character {
   return characters.find((c) => c.id === id) || characters[0];
 }
+
+// Build trigger: 2026-07-02 14:39
