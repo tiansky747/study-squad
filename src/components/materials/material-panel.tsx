@@ -22,6 +22,7 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [localUploads, setLocalUploads] = useState<any[]>([]);
   const [currentTab, setCurrentTab] = useState<"all" | "library" | "upload">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,11 +53,13 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
         return;
       }
       const data = await res.json();
-      if (data.preview) {
-        onSelectMaterial(data.preview);
-        setPreview(data.preview);
+      const fileContent = data.content || data.preview || "";
+      if (fileContent) {
+        onSelectMaterial(fileContent);
+        setPreview(fileContent.slice(0, 300));
         setShowPreview(true);
         setCurrentTab("upload");
+        setLocalUploads(prev => [{ name: data.name, size: data.size, source: "upload", preview: fileContent }, ...prev]);
       }
       loadMaterials();
       const btn = document.querySelector("[data-upload-btn]");
@@ -69,6 +72,14 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
   };
 
   const handleSelectMaterial = async (name: string, source: string) => {
+    // Check local uploads first
+    const local = localUploads.find(u => u.name === name && u.source === source);
+    if (local && local.preview) {
+      onSelectMaterial(local.preview);
+      setPreview(local.preview.slice(0, 300));
+      setShowPreview(true);
+      return;
+    }
     try {
       const res = await fetch(`/api/materials?name=${encodeURIComponent(name)}&source=${source}`);
       const data = await res.json();
@@ -78,14 +89,14 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
         setShowPreview(true);
       }
     } catch {
-      // fallback
       onSelectMaterial(name);
     }
   };
 
+  const displayed = [...localUploads, ...materials];
   const filtered = currentTab === "all"
-    ? materials
-    : materials.filter((m) => m.source === currentTab);
+    ? displayed
+    : displayed.filter((m) => m.source === currentTab);
 
   const tabs = [
     { id: "all" as const, label: "全部" },
