@@ -24,7 +24,8 @@ export default function StudyPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [apiKey, setApiKey] = useState("");
-  const [apiUrl, setApiUrl] = useState("https://api.openai.com/v1");
+  const [apiUrl, setApiUrl] = useState("https://api.deepseek.com/v1");
+  const [model, setModel] = useState("deepseek-chat");
   const materialEndRef = useRef<HTMLDivElement>(null);
 
   const handleSend = useCallback(async (content: string) => {

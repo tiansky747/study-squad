@@ -58,7 +58,7 @@ function getDemoReply(charId: string, msg: string, material: string, conversatio
 }
 
 export async function POST(req: NextRequest) {
-  const { msg, charId, material, apiKey, apiUrl, conversation } = await req.json();
+  const { msg, charId, material, apiKey, apiUrl, model, conversation } = await req.json();
 
   const charDir = path.join(CHAR_DIR, "characters.ts");
   const settingPath = path.join(process.cwd(), "..", "study-squad", "setting.md");
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: model || "gpt-4o-mini",
           messages: [
             {
               role: "system",
