@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   if (apiKey) {
     try {
-      const response = await fetch(`${apiUrl.replace(/\/+$/, "")}/chat/completions`, {
+      const response = await fetch(`${apiUrl.replace(/\/+$/, "")}/v1/chat/completions`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
