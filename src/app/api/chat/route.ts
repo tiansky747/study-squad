@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: model || "gpt-4o-mini",
+          model: model || "deepseek-v4-flash",
           messages: [
             {
               role: "system",
