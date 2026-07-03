@@ -1,26 +1,16 @@
-/**
- * Browser-side OCR for PDF files.
- * Uses PDF.js to render pages + Tesseract.js to recognize Chinese text.
- * Both libraries run entirely in the browser.
- */
-
-export async function ocrPdfFromBuffer(
+﻿export async function ocrPdfFromBuffer(
   buffer: ArrayBuffer,
   maxPages: number = 5,
   onProgress?: (msg: string) => void
 ): Promise<string> {
-  // Dynamically import heavy libraries
-  onProgress?.("正在加载PDF解析引擎...");
-  const pdfjsLib = await import("pdfjs-dist");
-  // Set worker from CDN
-  const version = (pdfjsLib as any).version;
+  onProgress?.("正在加载PDF引擎...");
+  const pdfjsLib = await loadPdfJs();
   pdfjsLib.GlobalWorkerOptions.workerSrc =
-    '/pdf.worker.min.mjs';
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js";
 
   onProgress?.("正在读取PDF文件...");
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const totalPages = Math.min(pdf.numPages, maxPages);
-  const results: string[] = [];
 
   onProgress?.("正在加载OCR引擎...");
   const Tesseract = await import("tesseract.js");
@@ -33,20 +23,28 @@ export async function ocrPdfFromBuffer(
     },
   });
 
+  const results: string[] = [];
   for (let i = 1; i <= totalPages; i++) {
-    onProgress?.(`正在处理第 ${i}/${totalPages} 页...`);
+    onProgress?.("正在处理第 " + i + "/" + totalPages + " 页...");
     const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2 }); // 2x for better accuracy
+    const viewport = page.getViewport({ scale: 2 });
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     const ctx = canvas.getContext("2d")!;
-    await page.render({ canvasContext: ctx as any, viewport } as any).promise;
-
+    await (page as any).render({ canvasContext: ctx, viewport: viewport as any }).promise;
     const { data } = await worker.recognize(canvas);
-    results.push(`--- 第 ${i} 页 ---\n${data.text}`);
+    results.push("--- 第 " + i + " 页 ---\n" + data.text);
   }
-
   await worker.terminate();
-  return results.join("\n\n");
+  return results.join("\n");
+}
+
+async function loadPdfJs(): Promise<any> {
+  const w = window as any;
+  if (w.pdfjsLib) return w.pdfjsLib;
+  const s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js";
+  await new Promise((ok, fail) => { s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+  return w.pdfjsLib;
 }
