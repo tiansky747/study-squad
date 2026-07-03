@@ -22,6 +22,7 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState("");
   const [localUploads, setLocalUploads] = useState<any[]>([]);
   const [currentTab, setCurrentTab] = useState<"all" | "library" | "upload">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,8 +41,39 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
 
   useEffect(() => { loadMaterials(); }, []);
 
-  const handleUpload = (file: File) => {
-    setUploading(true);
+    const handleUpload = (file: File) => {
+    const isPdf = file.name.toLowerCase().endsWith(".pdf");
+    if (isPdf) {
+      setOcrProgress("正在读取PDF...");
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const buffer = e.target?.result as ArrayBuffer;
+        if (!buffer) { alert("文件读取失败"); setOcrProgress(""); return; }
+        try {
+          const { ocrPdfFromBuffer } = await import("@/lib/pdf-ocr");
+          setOcrProgress("正在加载OCR引擎(首次需要下载15MB中文语言包)...");
+          const text = await ocrPdfFromBuffer(buffer, 5, (msg) => {
+            setOcrProgress(msg);
+          });
+          setOcrProgress("");
+          if (text && text.length > 10) {
+            onSelectMaterial(text);
+            setPreview(text.slice(0, 300));
+            setShowPreview(true);
+            setCurrentTab("upload");
+            setLocalUploads(prev => [{ name: file.name, size: text.length, source: "upload", preview: text }, ...prev]);
+          } else {
+            alert("未能从PDF中识别出文字，可能是扫描质量较差。");
+          }
+        } catch (err: any) {
+          setOcrProgress("");
+          alert(`PDF识别失败: ${err.message}`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+    // TXT/MD files: read directly as text
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string || "";
@@ -56,14 +88,10 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
       const btn = document.querySelector("[data-upload-btn]");
       if (btn) (btn as HTMLElement).innerText = "✓ 已上传";
       setTimeout(() => {
-        if (btn) (btn as HTMLElement).innerHTML = '<svg class=\"lucide lucide-upload\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" x2=\"12\" y1=\"3\" y2=\"15\"/></svg> 上传';
+        if (btn) (btn as HTMLElement).innerHTML = '<svg class="lucide lucide-upload" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> 上传';
       }, 2000);
-      setUploading(false);
     };
-    reader.onerror = () => {
-      alert("文件读取失败");
-      setUploading(false);
-    };
+    reader.onerror = () => { alert("文件读取失败"); };
     reader.readAsText(file);
   };
 
@@ -183,7 +211,17 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
       </div>
 
       {/* Preview */}
-      {showPreview && preview && (
+            {/* OCR Progress */}
+      {ocrProgress && (
+        <div className="border-t p-3">
+          <div className="flex items-center gap-2 text-xs text-[#667eea]">
+            <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.3"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round"/></svg>
+            <span>{ocrProgress}</span>
+          </div>
+        </div>
+      )}
+
+{showPreview && preview && (
         <div className="border-t p-3 max-h-40 overflow-y-auto">
           <p className="text-[10px] font-semibold text-[#667eea] mb-1">当前学习内容预览</p>
           <p className="text-[11px] text-gray-500 leading-relaxed whitespace-pre-wrap">
