@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         }),
       });
       const data = await response.json();
-      return NextResponse.json({ reply: data.choices?.[0]?.message?.content || "（无回复）" });
+      return NextResponse.json({ reply: data.choices?.[0]?.message?.content || "（AI返回了空回复，请检查API配置是否正确）" });
     } catch (e: any) {
       return NextResponse.json({ reply: `（AI连接失败: ${e.message}）\n让我们继续聊聊~` });
     }
