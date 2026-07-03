@@ -148,6 +148,10 @@ export default function StudyPage() {
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                 />
+                <input type="text" placeholder="模型 (deepseek-chat)" value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-36 px-2 py-1 border rounded text-xs"
+                />
                 <span className="text-gray-400 shrink-0">
                   {apiKey ? "🟢 已配置" : "⚪ 演示模式"}
                 </span>
