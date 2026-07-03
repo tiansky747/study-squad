@@ -91,7 +91,9 @@ export async function POST(req: NextRequest) {
         }),
       });
       const data = await response.json();
-      return NextResponse.json({ reply: data.choices?.[0]?.message?.content || "（AI返回了空回复，请检查API配置是否正确）" });
+      var reply = data.choices?.[0]?.message?.content;
+      if (reply) return NextResponse.json({ reply: reply });
+      return NextResponse.json({ reply: "（API返回空，完整响应: " + JSON.stringify(data).substring(0,500) + "）" });
     } catch (e: any) {
       return NextResponse.json({ reply: `（AI连接失败: ${e.message}）\n让我们继续聊聊~` });
     }
