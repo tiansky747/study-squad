@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   if (apiKey) {
     try {
-      const response = await fetch(`${apiUrl.replace(/\/$/, "")}/v1/chat/completions`, {
+      const response = await fetch(`${apiUrl.replace(/\/+$/, "")}/chat/completions`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
