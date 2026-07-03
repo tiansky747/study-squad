@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import { Upload, FileText, BookOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default function MaterialPanel({ selectedMaterial, onSelectMaterial }: Pr
         try {
           const { ocrPdfFromBuffer } = await import("@/lib/pdf-ocr");
           setOcrProgress("正在加载OCR引擎(首次需要下载15MB中文语言包)...");
-          const text = await ocrPdfFromBuffer(buffer, 5, (msg) => {
+          const text = await ocrPdfFromBuffer(buffer, 30, (msg) => {
             setOcrProgress(msg);
           });
           setOcrProgress("");
