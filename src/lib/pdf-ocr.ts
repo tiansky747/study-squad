@@ -1,10 +1,16 @@
+/**
+ * PDF text extraction using pdfjs-dist v4 (bundled, no CDN needed).
+ * Worker is served locally from /pdf.worker.min.mjs
+ */
+
 export async function ocrPdfFromBuffer(
   buffer: ArrayBuffer,
   maxPages: number = 5,
   onProgress?: (msg: string) => void
 ): Promise<string> {
   onProgress?.("正在加载PDF引擎...");
-  const pdfjsLib = await loadPdfJs();
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
   onProgress?.("正在读取PDF文件...");
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
@@ -24,64 +30,16 @@ export async function ocrPdfFromBuffer(
   const results: string[] = [];
   for (let i = 1; i <= totalPages; i++) {
     onProgress?.("正在处理第 " + i + "/" + totalPages + " 页...");
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement("canvas");
+    var page = await pdf.getPage(i);
+    var viewport = page.getViewport({ scale: 2 });
+    var canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d")!;
+    var ctx = canvas.getContext("2d")!;
     await (page as any).render({ canvasContext: ctx, viewport: viewport as any }).promise;
-    const { data } = await worker.recognize(canvas);
+    var { data } = await worker.recognize(canvas);
     results.push("--- 第 " + i + " 页 ---\n" + data.text);
   }
   await worker.terminate();
   return results.join("\n");
-}
-
-// Try multiple CDN URLs in order (jsdelivr works well in China, cloudflare is backup)
-var PDF_CDNS = [
-  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js",
-];
-
-var WORKER_CDNS = [
-  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js",
-];
-
-async function loadPdfJs(): Promise<any> {
-  var w = window as any;
-  if (w.pdfjsLib) return w.pdfjsLib;
-
-  // Try each CDN with a timeout
-  for (var i = 0; i < PDF_CDNS.length; i++) {
-    try {
-      await loadScript(PDF_CDNS[i], 10000);
-      w.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_CDNS[i];
-      return w.pdfjsLib;
-    } catch (e) {
-      if (i < PDF_CDNS.length - 1) continue;
-      throw new Error("PDF引擎加载失败，请检查网络连接。尝试刷新页面后重试。");
-    }
-  }
-}
-
-function loadScript(url: string, timeoutMs: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    var s = document.createElement("script");
-    var timedOut = false;
-    var timer = setTimeout(function () {
-      timedOut = true;
-      s.remove();
-      reject(new Error("加载超时: " + url));
-    }, timeoutMs);
-    s.onload = function () {
-      if (!timedOut) { clearTimeout(timer); resolve(); }
-    };
-    s.onerror = function () {
-      if (!timedOut) { clearTimeout(timer); s.remove(); reject(new Error("加载失败: " + url)); }
-    };
-    s.src = url;
-    document.head.appendChild(s);
-  });
 }
