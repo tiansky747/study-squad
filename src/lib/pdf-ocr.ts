@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Browser-side OCR for PDF files.
  * Uses PDF.js to render pages + Tesseract.js to recognize Chinese text.
  * Both libraries run entirely in the browser.
@@ -15,7 +15,7 @@ export async function ocrPdfFromBuffer(
   // Set worker from CDN
   const version = (pdfjsLib as any).version;
   pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+    '/pdf.worker.min.mjs';
 
   onProgress?.("正在读取PDF文件...");
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
